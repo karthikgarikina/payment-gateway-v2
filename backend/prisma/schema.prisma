@@ -8,18 +8,22 @@ datasource db {
 }
 
 model Merchant {
-  id           String   @id @default(uuid())
-  name         String
-  email        String   @unique
-  api_key      String   @unique
-  api_secret   String
-  webhook_url  String?
-  is_active    Boolean  @default(true)
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
+  id             String   @id @default(uuid())
+  name           String
+  email          String   @unique
+  api_key        String   @unique
+  api_secret     String
+  webhook_url    String?
+  webhook_secret String?  // NEW (Deliverable 2)
+  is_active      Boolean  @default(true)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
 
-  orders   Order[]
-  payments Payment[]
+  orders    Order[]
+  payments  Payment[]
+  refunds   Refund[]
+  webhooks  WebhookLog[]
+  idempotencyKeys IdempotencyKey[]
 }
 
 model Order {
@@ -40,24 +44,74 @@ model Order {
 }
 
 model Payment {
-  id               String   @id
-  order_id         String
-  merchant_id      String
-  amount           Int
-  currency         String   @default("INR")
-  method           String
-  status           String   @default("processing")
-  vpa              String?
-  card_network     String?
-  card_last4       String?
-  error_code       String?
+  id                String   @id
+  order_id          String
+  merchant_id       String
+  amount            Int
+  currency          String   @default("INR")
+  method            String
+  status            String   @default("pending") // CHANGED
+  captured          Boolean  @default(false)     // NEW
+  vpa               String?
+  card_network      String?
+  card_last4        String?
+  error_code        String?
   error_description String?
-  created_at       DateTime @default(now())
-  updated_at       DateTime @updatedAt
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
 
   order    Order    @relation(fields: [order_id], references: [id])
   merchant Merchant @relation(fields: [merchant_id], references: [id])
+  refunds  Refund[]
 
   @@index([order_id])
   @@index([status])
+}
+
+model Refund {
+  id           String   @id
+  payment_id   String
+  merchant_id  String
+  amount       Int
+  reason       String?
+  status       String   @default("pending")
+  created_at   DateTime @default(now())
+  processed_at DateTime?
+
+  payment  Payment  @relation(fields: [payment_id], references: [id])
+  merchant Merchant @relation(fields: [merchant_id], references: [id])
+
+  @@index([payment_id])
+}
+
+model WebhookLog {
+  id             String   @id @default(uuid())
+  merchant_id    String
+  event          String
+  payload        Json
+  status         String   @default("pending")
+  attempts       Int      @default(0)
+  last_attempt_at DateTime?
+  next_retry_at  DateTime?
+  response_code  Int?
+  response_body  String?
+  created_at     DateTime @default(now())
+
+  merchant Merchant @relation(fields: [merchant_id], references: [id])
+
+  @@index([merchant_id])
+  @@index([status])
+  @@index([next_retry_at])
+}
+
+model IdempotencyKey {
+  key         String
+  merchant_id String
+  response    Json
+  created_at  DateTime @default(now())
+  expires_at  DateTime
+
+  merchant Merchant @relation(fields: [merchant_id], references: [id])
+
+  @@id([key, merchant_id])
 }
