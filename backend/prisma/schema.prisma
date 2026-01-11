@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Merchant {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  api_key      String   @unique
+  api_secret   String
+  webhook_url  String?
+  is_active    Boolean  @default(true)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  orders   Order[]
+  payments Payment[]
+}
+
+model Order {
+  id          String   @id
+  merchant_id String
+  amount      Int
+  currency    String   @default("INR")
+  receipt     String?
+  notes       Json?
+  status      String   @default("created")
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  merchant Merchant @relation(fields: [merchant_id], references: [id])
+  payments Payment[]
+
+  @@index([merchant_id])
+}
+
+model Payment {
+  id               String   @id
+  order_id         String
+  merchant_id      String
+  amount           Int
+  currency         String   @default("INR")
+  method           String
+  status           String   @default("processing")
+  vpa              String?
+  card_network     String?
+  card_last4       String?
+  error_code       String?
+  error_description String?
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  order    Order    @relation(fields: [order_id], references: [id])
+  merchant Merchant @relation(fields: [merchant_id], references: [id])
+
+  @@index([order_id])
+  @@index([status])
+}
