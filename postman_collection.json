@@ -1,0 +1,358 @@
+{
+  "info": {
+    "name": "Payment Gateway V2 \u2013 FULL API Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Complete Postman collection including Orders (v1), Payments, Refunds, Webhooks, Dashboard, and Job Queue APIs."
+  },
+  "item": [
+    {
+      "name": "System & Health",
+      "item": [
+        {
+          "name": "Job Queue Status",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:8000/api/v1/test/jobs/status",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "v1",
+                "test",
+                "jobs",
+                "status"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders (V1)",
+      "item": [
+        {
+          "name": "Create Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Api-Key",
+                "value": "key_test_abc123"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "secret_test_xyz789"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8000/api/v1/orders",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 50000,\n  \"currency\": \"INR\",\n  \"receipt\": \"receipt_123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Order (Public)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:8000/api/v1/orders/{{order_id}}/public",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                "{{order_id}}",
+                "public"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Create Payment (Async)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Api-Key",
+                "value": "key_test_abc123"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "secret_test_xyz789"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8000/api/v1/payments",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "v1",
+                "payments"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_id\": \"{{order_id}}\",\n  \"method\": \"upi\",\n  \"vpa\": \"test@upi\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Payment (Merchant)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Api-Key",
+                "value": "key_test_abc123"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "secret_test_xyz789"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8000/api/v1/payments/{{payment_id}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "{{payment_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Capture Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Api-Key",
+                "value": "key_test_abc123"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "secret_test_xyz789"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8000/api/v1/payments/{{payment_id}}/capture",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "{{payment_id}}",
+                "capture"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 50000\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Refunds",
+      "item": [
+        {
+          "name": "Create Refund",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Api-Key",
+                "value": "key_test_abc123"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "secret_test_xyz789"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8000/api/v1/payments/{{payment_id}}/refunds",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "{{payment_id}}",
+                "refunds"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 50000,\n  \"reason\": \"Customer requested refund\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Refund",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Api-Key",
+                "value": "key_test_abc123"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "secret_test_xyz789"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8000/api/v1/refunds/{{refund_id}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "v1",
+                "refunds",
+                "{{refund_id}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Webhooks & Dashboard",
+      "item": [
+        {
+          "name": "Get Webhook Config & Logs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Api-Key",
+                "value": "key_test_abc123"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "secret_test_xyz789"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8000/api/v1/webhooks?limit=10&offset=0",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "v1",
+                "webhooks"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Retry Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Api-Key",
+                "value": "key_test_abc123"
+              },
+              {
+                "key": "X-Api-Secret",
+                "value": "secret_test_xyz789"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8000/api/v1/webhooks/{{webhook_id}}/retry",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "v1",
+                "webhooks",
+                "{{webhook_id}}",
+                "retry"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
