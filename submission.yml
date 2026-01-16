@@ -1,0 +1,20 @@
+setup:
+  commands:
+    - docker-compose build
+
+start:
+  commands:
+    - docker-compose up -d
+
+verify:
+  commands:
+    - curl http://localhost:8000/api/v1/test/jobs/status
+    - curl http://localhost:8000/health || true
+
+test:
+  commands:
+    - echo "No automated tests configured"
+
+shutdown:
+  commands:
+    - docker-compose down
