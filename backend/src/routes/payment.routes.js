@@ -6,6 +6,7 @@ import {
   listPayments,
   createPublicPayment,
   getPublicPayment,
+  capturePayment
 } from "../controllers/payment.controller.js";
 
 const router = express.Router();
@@ -18,5 +19,10 @@ router.get("/:payment_id/public", getPublicPayment);
 router.post("/", authenticate, createPayment);
 router.get("/", authenticate, listPayments);
 router.get("/:payment_id", authenticate, getPayment);
+router.post(
+  "/:payment_id/capture",
+  authenticate,
+  capturePayment
+);
 
 export default router;

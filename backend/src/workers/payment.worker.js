@@ -1,6 +1,7 @@
 import { Worker } from "bullmq";
 import { prisma } from "../config/db.js";
 import { connection } from "../queue/redis.js";
+import { webhookQueue } from "../queue/queues.js";
 
 new Worker(
   "payments",
@@ -9,8 +10,18 @@ new Worker(
 
     console.log("Processing payment:", paymentId);
 
-    let delay = 5000;
-    let success = Math.random() < 0.9;
+    const payment = await prisma.payment.findUnique({
+      where: { id: paymentId },
+    });
+
+    if (!payment) return;
+
+    // ----- delay -----
+    let delay = 5000 + Math.random() * 5000;
+    let success =
+      payment.method === "upi"
+        ? Math.random() < 0.9
+        : Math.random() < 0.95;
 
     if (process.env.TEST_MODE === "true") {
       delay = Number(process.env.TEST_PROCESSING_DELAY || 1000);
@@ -19,8 +30,9 @@ new Worker(
 
     await new Promise((r) => setTimeout(r, delay));
 
-    await prisma.payment.update({
-      where: { id: paymentId },
+    // ----- update payment -----
+    const updatedPayment = await prisma.payment.update({
+      where: { id: payment.id },
       data: success
         ? { status: "success" }
         : {
@@ -31,6 +43,20 @@ new Worker(
     });
 
     console.log("Payment updated:", paymentId);
+
+    // ----- enqueue webhook (NO LOG CREATION HERE) -----
+    await webhookQueue.add("deliver-webhook", {
+      merchantId: updatedPayment.merchant_id,
+      event:
+        updatedPayment.status === "success"
+          ? "payment.success"
+          : "payment.failed",
+      payload: {
+        payment: updatedPayment,
+      },
+    });
   },
   { connection }
 );
+
+console.log("🚀 payment Worker listening to BullMQ queues");

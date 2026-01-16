@@ -2,10 +2,20 @@ import { useEffect, useState } from "react";
 
 const API = "http://localhost:8000";
 
+/* ---------------- postMessage helper ---------------- */
+function sendToParent(type, data = {}) {
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({ type, data }, "*");
+  }
+}
+
 export default function Checkout() {
+  /* ---------------- params ---------------- */
   const params = new URLSearchParams(window.location.search);
   const orderId = params.get("order_id");
+  const embedded = params.get("embedded") === "true";
 
+  /* ---------------- state ---------------- */
   const [order, setOrder] = useState(null);
   const [method, setMethod] = useState(null);
 
@@ -18,12 +28,12 @@ export default function Checkout() {
   const [cvv, setCvv] = useState("");
   const [holderName, setHolderName] = useState("");
 
-  // UI state
+  // UI
   const [status, setStatus] = useState("idle"); // idle | processing | success | failed
   const [paymentId, setPaymentId] = useState(null);
   const [error, setError] = useState("");
 
-  /* ---------------- Load order ---------------- */
+  /* ---------------- load order ---------------- */
   useEffect(() => {
     if (!orderId) return;
 
@@ -36,7 +46,7 @@ export default function Checkout() {
       .catch(() => setError("Failed to load order"));
   }, [orderId]);
 
-  /* ---------------- Poll payment ---------------- */
+  /* ---------------- poll payment ---------------- */
   useEffect(() => {
     if (!paymentId) return;
 
@@ -47,18 +57,22 @@ export default function Checkout() {
       const data = await res.json();
 
       if (data.status === "success") {
+        clearInterval(interval);
         setStatus("success");
+        sendToParent("payment_success", { paymentId });
+      }
+
+      if (data.status === "failed") {
         clearInterval(interval);
-      } else if (data.status === "failed") {
         setStatus("failed");
-        clearInterval(interval);
+        sendToParent("payment_failed", { paymentId });
       }
     }, 2000);
 
     return () => clearInterval(interval);
   }, [paymentId]);
 
-  /* ---------------- Create payment ---------------- */
+  /* ---------------- create payment ---------------- */
   async function createPayment(payload) {
     setError("");
     setStatus("processing");
@@ -88,7 +102,23 @@ export default function Checkout() {
     }
   }
 
-  /* ---------------- UI guards ---------------- */
+  /* ---------------- RENDER ---------------- */
+
+  // Missing order_id UI (NO EARLY RETURN BEFORE HOOKS)
+  if (!orderId) {
+    return (
+      <div data-test-id="error-state">
+        <h3>Error</h3>
+        <p>Missing order_id</p>
+        {embedded && (
+          <button onClick={() => sendToParent("close_modal")}>
+            Close
+          </button>
+        )}
+      </div>
+    );
+  }
+
   if (!order) return <h2>Loading order...</h2>;
 
   return (
@@ -98,15 +128,9 @@ export default function Checkout() {
       {/* Order Summary */}
       <div data-test-id="order-summary">
         <div>
-          Amount:{" "}
-          <span data-test-id="order-amount">
-            ₹{(order.amount / 100).toFixed(2)}
-          </span>
+          Amount: ₹{(order.amount / 100).toFixed(2)}
         </div>
-        <div>
-          Order ID:{" "}
-          <span data-test-id="order-id">{order.id}</span>
-        </div>
+        <div>Order ID: {order.id}</div>
       </div>
 
       {/* Error */}
@@ -119,49 +143,35 @@ export default function Checkout() {
       {/* Method selection */}
       {status === "idle" && (
         <>
-          <div data-test-id="payment-methods">
-            <button data-test-id="method-upi" onClick={() => setMethod("upi")}>
-              UPI
-            </button>
-            <button data-test-id="method-card" onClick={() => setMethod("card")}>
-              Card
-            </button>
-          </div>
+          <button onClick={() => setMethod("upi")}>UPI</button>
+          <button onClick={() => setMethod("card")}>Card</button>
 
-          {/* UPI FORM */}
           {method === "upi" && (
             <form
-              data-test-id="upi-form"
               onSubmit={(e) => {
                 e.preventDefault();
                 if (!vpa) {
-                  setError("Please enter a valid UPI ID");
+                  setError("Enter valid UPI ID");
                   return;
                 }
                 createPayment({ method: "upi", vpa });
               }}
             >
               <input
-                data-test-id="vpa-input"
-                placeholder="username@bank (e.g. raju@paytm)"
+                placeholder="username@bank"
                 value={vpa}
                 onChange={(e) => setVpa(e.target.value)}
               />
-              <button data-test-id="pay-button" type="submit">
-                Pay ₹{(order.amount / 100).toFixed(0)}
-              </button>
+              <button type="submit">Pay</button>
             </form>
           )}
 
-          {/* CARD FORM */}
           {method === "card" && (
             <form
-              data-test-id="card-form"
               onSubmit={(e) => {
                 e.preventDefault();
-
                 if (!cardNumber || !expiry || !cvv || !holderName) {
-                  setError("All card fields are required");
+                  setError("All fields required");
                   return;
                 }
 
@@ -180,64 +190,43 @@ export default function Checkout() {
               }}
             >
               <input
-                data-test-id="card-number-input"
-                placeholder="Card Number (e.g. 4111 1111 1111 1111)"
+                placeholder="Card Number"
                 value={cardNumber}
                 onChange={(e) => setCardNumber(e.target.value)}
               />
-
               <input
-                data-test-id="expiry-input"
                 placeholder="MM/YY"
                 value={expiry}
                 onChange={(e) => setExpiry(e.target.value)}
               />
-
               <input
-                data-test-id="cvv-input"
                 placeholder="CVV"
                 value={cvv}
                 onChange={(e) => setCvv(e.target.value)}
               />
-
               <input
-                data-test-id="cardholder-name-input"
                 placeholder="Name on Card"
                 value={holderName}
                 onChange={(e) => setHolderName(e.target.value)}
               />
-
-              <button data-test-id="pay-button" type="submit">
-                Pay ₹{(order.amount / 100).toFixed(0)}
-              </button>
+              <button type="submit">Pay</button>
             </form>
           )}
         </>
       )}
 
-      {/* Processing */}
-      {status === "processing" && (
-        <div data-test-id="processing-state">
-          Processing payment...
-        </div>
-      )}
+      {status === "processing" && <p>Processing payment...</p>}
 
-      {/* Success */}
       {status === "success" && (
-        <div data-test-id="success-state">
-          <h3>Payment Successful 🎉</h3>
-          <div>
-            Payment ID:{" "}
-            <span data-test-id="payment-id">{paymentId}</span>
-          </div>
-        </div>
+        <p>Payment successful 🎉 (ID: {paymentId})</p>
       )}
 
-      {/* Failure */}
-      {status === "failed" && (
-        <div data-test-id="error-state">
-          Payment Failed. Please try again.
-        </div>
+      {status === "failed" && <p>Payment failed</p>}
+
+      {embedded && (
+        <button onClick={() => sendToParent("close_modal")}>
+          Close
+        </button>
       )}
     </div>
   );

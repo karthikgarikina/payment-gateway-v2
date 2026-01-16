@@ -47,7 +47,7 @@ services:
 
   dashboard:
     build:
-      context: ./frontend
+      context: ./dashboard
     container_name: gateway_dashboard
     ports:
       - "3000:80"

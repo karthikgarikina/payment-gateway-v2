@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <button id="pay">Pay Now</button>
+
+    <script src="dist/checkout.js"></script>
+    <script>
+      document.getElementById("pay").onclick = () => {
+        const checkout = new PaymentGateway({
+          key: "key_test_abc123",
+          orderId: "order_xyz",
+          onSuccess: (res) => alert("SUCCESS: " + res.paymentId),
+          onFailure: (err) => alert("FAILED"),
+          onClose: () => console.log("CLOSED")
+        });
+
+        checkout.open();
+      };
+    </script>
+  </body>
+</html>

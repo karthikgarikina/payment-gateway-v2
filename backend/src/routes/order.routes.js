@@ -7,6 +7,8 @@ const router = express.Router();
 
 router.post("/api/v1/orders", authenticate, createOrder);
 router.get("/api/v1/orders/:order_id", authenticate, getOrder);
+
+//for checkout page
 router.get("/api/v1/orders/:order_id/public", async (req, res) => {
   const { order_id } = req.params;
 
